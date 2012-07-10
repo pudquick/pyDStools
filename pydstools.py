@@ -60,27 +60,6 @@ def get_DataNode_buffer(dn_obj):
     recast_obj = cast(addressof(dn_obj), POINTER(tDataNode))
     return cast(addressof(recast_obj.contents) + tDataNode.fBufferData.offset, POINTER(c_char*(recast_obj.contents.fBufferLength))).contents[:]
 
-# dsOpenDirService = libDS.dsOpenDirService
-# dsFindDirNodes = libDS.dsFindDirNodes
-# dsGetDirNodeName = libDS.dsGetDirNodeName
-# dsDataBufferDeAllocate = libDS.dsDataBufferDeAllocate
-# dsDataListDeallocate = libDS.dsDataListDeallocate
-# dsOpenDirNode = libDS.dsOpenDirNode
-# dsGetRecordList = libDS.dsGetRecordList
-# dsGetRecordEntry = libDS.dsGetRecordEntry
-# dsGetAttributeEntry = libDS.dsGetAttributeEntry
-# dsGetAttributeValue = libDS.dsGetAttributeValue
-
-# dsCloseDirService = libDS.dsCloseDirService
-# dsCloseDirNode = libDS.dsCloseDirService
-# dsCloseAttributeList = libDS.dsCloseAttributeList
-# dsCloseAttributeValueList = libDS.dsCloseAttributeValueList
-# dsDeallocRecordEntry = libDS.dsDeallocRecordEntry
-# dsDeallocAttributeEntry = libDS.dsDeallocAttributeEntry
-# dsDeallocAttributeValueEntry = libDS.dsDeallocAttributeValueEntry
-
-# dsDoAttributeValueSearchWithData = libDS.dsDoAttributeValueSearchWithData
-
 dsDataBufferAllocate = libDS.dsDataBufferAllocate
 dsDataBufferAllocate.restype = POINTER(tDataBuffer)
 dsBuildListFromStrings = libDS.dsBuildListFromStrings
@@ -88,73 +67,6 @@ dsBuildListFromStrings.restype = POINTER(tDataList)
 
 eDSAuthenticationSearchNodeName = 8705
 eDSiExact = 8449
-
-dirRef = c_uint32(0)
-# print "<Connecting to DS>"
-status = libDS.dsOpenDirService(byref(dirRef))
-# if (status == 0):
-# print "<Connected.>"
-dataBuff = dsDataBufferAllocate(dirRef, 2*1024);
-numResults, context = c_uint32(0), c_uint32(0)
-# print "<Finding Search node>"
-status = libDS.dsFindDirNodes(dirRef, dataBuff, None, eDSAuthenticationSearchNodeName, byref(numResults), byref(context))
-# print "<Result code: %s - # of Results: %s>" % (status, numResults)
-# print "<Getting node name>"
-nodePath = POINTER(tDataList)()
-status = libDS.dsGetDirNodeName(dirRef, dataBuff, 1, byref(nodePath))
-# print "<Result code: %s>" % status
-#
-# We can clear the buffer here, and should, because now we have nodePath to work from
-#
-_ = libDS.dsDataBufferDeAllocate(dirRef, dataBuff)
-dataBuff = None
-dataBuff = dsDataBufferAllocate(dirRef, 8*1024)
-# tDirNodeReference             nodeRef;
-# typedef   UInt32  tDirNodeReference;
-nodeRef = c_uint32(0)
-status = libDS.dsOpenDirNode(dirRef, nodePath, byref(nodeRef))
-recName = dsBuildListFromStrings(dirRef, "mike", None)
-recType = dsBuildListFromStrings(dirRef, "dsRecTypeStandard:Users", None)
-attrTypes = dsBuildListFromStrings(dirRef, "dsAttributesAll", None)
-#
-# When you no longer need the data list, call dsDataListDeallocate to release the memory associated with it.
-# When you no longer wor with the node, close it with dsCloseDirNode
-#
-numResults = c_uint32(0)
-context = c_uint32(0)
-# status = dsDoAttributeValueSearchWithData(nodeRef, dataBuff, byref(recordTypesToSearchFor), matchType, eDSContains, patternToMatch, requestedAttributes, 0, byref(numResults), byref(context))
-status = libDS.dsGetRecordList(nodeRef, dataBuff, recName, eDSiExact, recType, attrTypes, 0, byref(numResults), byref(context))
-status = libDS.dsDataListDeallocate(dirRef, recName)
-status = libDS.dsDataListDeallocate(dirRef, recType)
-status = libDS.dsDataListDeallocate(dirRef, attrTypes)
-
-# buffer contains list of records - needs to be cleaned up when done with it
-
-# Get record 1
-attrListRef = c_uint32(0)
-recordEntryPtr = POINTER(tRecordEntry)()
-status = libDS.dsGetRecordEntry(nodeRef, dataBuff, c_uint32(1), byref(attrListRef), byref(recordEntryPtr))
-
-# dataBuff was only read from previous dsGetRecordList - no changes
-# Use dsCloseAttributeList when you're done accessing the attributes on the record
-# Use dsDeallocRecordEntry when you're all done looking at the attributes on the record
-
-# Get attribute 1
-outAttributeValueListRef = c_uint32(0)
-outAttributeInfoPtr = POINTER(tAttributeEntry)()
-status = libDS.dsGetAttributeEntry(nodeRef, dataBuff, attrListRef, c_uint32(1), byref(outAttributeValueListRef), byref(outAttributeInfoPtr))
-
-# dataBuff was only read from previous dsGetRecordList - no changes
-# Use dsCloseAttributeValueList when you're done accessing the values of the attribute on the record
-# Use dsDeallocAttributeEntry when you're done accessing the information on the attribute on the record
-
-# Get value 1 of attribute 1
-outAttributeValue = POINTER(tAttributeValueEntry)()
-status = libDS.dsGetAttributeValue(nodeRef, dataBuff, c_uint32(1), outAttributeValueListRef, byref(outAttributeValue))
-
-# dataBuff was only read from previous dsGetRecordList - no changes
-# Use dsCloseAttributeValueList when you're done accessing the values of the attribute on the record (listed above)
-# Use dsDeallocAttributeValueEntry when you're done access the value on the attribute on the record
 
 def ds_user_exists(username):
     dirRef = c_uint32(0)
@@ -209,3 +121,92 @@ def ds_user_exists(username):
     libDS.dsCloseDirService(dirRef)
     # 1 or more = account exists
     return int(numResults.value)
+
+# Historical bits, thinking out-loud
+
+if (not True):
+    # dsOpenDirService = libDS.dsOpenDirService
+    # dsFindDirNodes = libDS.dsFindDirNodes
+    # dsGetDirNodeName = libDS.dsGetDirNodeName
+    # dsDataBufferDeAllocate = libDS.dsDataBufferDeAllocate
+    # dsDataListDeallocate = libDS.dsDataListDeallocate
+    # dsOpenDirNode = libDS.dsOpenDirNode
+    # dsGetRecordList = libDS.dsGetRecordList
+    # dsGetRecordEntry = libDS.dsGetRecordEntry
+    # dsGetAttributeEntry = libDS.dsGetAttributeEntry
+    # dsGetAttributeValue = libDS.dsGetAttributeValue
+    # dsCloseDirService = libDS.dsCloseDirService
+    # dsCloseDirNode = libDS.dsCloseDirService
+    # dsCloseAttributeList = libDS.dsCloseAttributeList
+    # dsCloseAttributeValueList = libDS.dsCloseAttributeValueList
+    # dsDeallocRecordEntry = libDS.dsDeallocRecordEntry
+    # dsDeallocAttributeEntry = libDS.dsDeallocAttributeEntry
+    # dsDeallocAttributeValueEntry = libDS.dsDeallocAttributeValueEntry
+    # dsDoAttributeValueSearchWithData = libDS.dsDoAttributeValueSearchWithData
+    
+    dirRef = c_uint32(0)
+    # print "<Connecting to DS>"
+    status = libDS.dsOpenDirService(byref(dirRef))
+    # if (status == 0):
+    # print "<Connected.>"
+    dataBuff = dsDataBufferAllocate(dirRef, 2*1024);
+    numResults, context = c_uint32(0), c_uint32(0)
+    # print "<Finding Search node>"
+    status = libDS.dsFindDirNodes(dirRef, dataBuff, None, eDSAuthenticationSearchNodeName, byref(numResults), byref(context))
+    # print "<Result code: %s - # of Results: %s>" % (status, numResults)
+    # print "<Getting node name>"
+    nodePath = POINTER(tDataList)()
+    status = libDS.dsGetDirNodeName(dirRef, dataBuff, 1, byref(nodePath))
+    # print "<Result code: %s>" % status
+    #
+    # We can clear the buffer here, and should, because now we have nodePath to work from
+    #
+    _ = libDS.dsDataBufferDeAllocate(dirRef, dataBuff)
+    dataBuff = None
+    dataBuff = dsDataBufferAllocate(dirRef, 8*1024)
+    # tDirNodeReference             nodeRef;
+    # typedef   UInt32  tDirNodeReference;
+    nodeRef = c_uint32(0)
+    status = libDS.dsOpenDirNode(dirRef, nodePath, byref(nodeRef))
+    recName = dsBuildListFromStrings(dirRef, "mike", None)
+    recType = dsBuildListFromStrings(dirRef, "dsRecTypeStandard:Users", None)
+    attrTypes = dsBuildListFromStrings(dirRef, "dsAttributesAll", None)
+    #
+    # When you no longer need the data list, call dsDataListDeallocate to release the memory associated with it.
+    # When you no longer wor with the node, close it with dsCloseDirNode
+    #
+    numResults = c_uint32(0)
+    context = c_uint32(0)
+    # status = dsDoAttributeValueSearchWithData(nodeRef, dataBuff, byref(recordTypesToSearchFor), matchType, eDSContains, patternToMatch, requestedAttributes, 0, byref(numResults), byref(context))
+    status = libDS.dsGetRecordList(nodeRef, dataBuff, recName, eDSiExact, recType, attrTypes, 0, byref(numResults), byref(context))
+    status = libDS.dsDataListDeallocate(dirRef, recName)
+    status = libDS.dsDataListDeallocate(dirRef, recType)
+    status = libDS.dsDataListDeallocate(dirRef, attrTypes)
+    
+    # buffer contains list of records - needs to be cleaned up when done with it
+    
+    # Get record 1
+    attrListRef = c_uint32(0)
+    recordEntryPtr = POINTER(tRecordEntry)()
+    status = libDS.dsGetRecordEntry(nodeRef, dataBuff, c_uint32(1), byref(attrListRef), byref(recordEntryPtr))
+    
+    # dataBuff was only read from previous dsGetRecordList - no changes
+    # Use dsCloseAttributeList when you're done accessing the attributes on the record
+    # Use dsDeallocRecordEntry when you're all done looking at the attributes on the record
+    
+    # Get attribute 1
+    outAttributeValueListRef = c_uint32(0)
+    outAttributeInfoPtr = POINTER(tAttributeEntry)()
+    status = libDS.dsGetAttributeEntry(nodeRef, dataBuff, attrListRef, c_uint32(1), byref(outAttributeValueListRef), byref(outAttributeInfoPtr))
+    
+    # dataBuff was only read from previous dsGetRecordList - no changes
+    # Use dsCloseAttributeValueList when you're done accessing the values of the attribute on the record
+    # Use dsDeallocAttributeEntry when you're done accessing the information on the attribute on the record
+    
+    # Get value 1 of attribute 1
+    outAttributeValue = POINTER(tAttributeValueEntry)()
+    status = libDS.dsGetAttributeValue(nodeRef, dataBuff, c_uint32(1), outAttributeValueListRef, byref(outAttributeValue))
+    
+    # dataBuff was only read from previous dsGetRecordList - no changes
+    # Use dsCloseAttributeValueList when you're done accessing the values of the attribute on the record (listed above)
+    # Use dsDeallocAttributeValueEntry when you're done access the value on the attribute on the record
